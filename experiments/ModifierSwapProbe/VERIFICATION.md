@@ -24,7 +24,12 @@
 처음 시도한 `swift test`는 이 Mac의 Command Line Tools 환경에서 `XCTest` 모듈이 없어 실패했습니다.
 외부 설치 없이 같은 검사들을 독립 실행형 검사 도구로 전환했고 위 명령으로 통과했습니다.
 
-이 결과는 기존 Helper로의 통합이나 실제 두 Mac 사이 호환성 완료를 의미하지 않습니다.
+위 표는 최초 로컬 검증 시점의 기록입니다.
+이후 사용자가 Target에서 Probe를 켜고 실제 Universal Control 입력으로 시험했습니다.
+키 누름은 1회씩, modifier 변화는 6회씩 증가했으며 교환 모드에서 기존 Caps Lock, 일반 키,
+Option / Command 교환이 모두 정상이라고 보고했습니다. 따라서 기본 교환 동작은 사용자 보고 기준 PASS입니다.
+60초 자동 종료, 긴급 중지, 눌린 modifier를 유지한 채 Mac 사이 이동은 별도 확인되지 않았습니다.
+이후 본체 통합 결과는 `docs/modifier-fork.md`에 기록합니다.
 원본 앱, 시스템 modifier 설정, 입력 모니터링과 접근성 권한은 이 실험에서 변경하지 않았습니다.
 
 다음 검증: README의 대상 Mac 실험 순서를 따라 실행하고, 키 누름 / modifier 변화 / 변환 이벤트 숫자와

@@ -1,5 +1,4 @@
 import AppKit
-import Sparkle
 import UniversalControlCore
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -9,27 +8,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var sourceClient: SourceClient?
     private var inputSourceRelay: InputSourceRelay?
     private var physicalCapsLockMonitor: PhysicalCapsLockMonitor?
+    private let modifierSwap = TargetModifierSwap()
     private var settingsController: SettingsWindowController?
-    private var updaterReadinessObservation: NSKeyValueObservation?
     private var connectionStatus = "시작 중"
     private var inputMonitoringReady = false
-    private lazy var updaterController = SPUStandardUpdaterController(
-        startingUpdater: true,
-        updaterDelegate: nil,
-        userDriverDelegate: nil
-    )
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         configureStatusItemButton()
         configureMainMenu()
-        _ = updaterController
-        updaterReadinessObservation = updaterController.updater.observe(
-            \.canCheckForUpdates,
-            options: [.initial, .new]
-        ) { [weak self] _, _ in
-            DispatchQueue.main.async { [weak self] in self?.refreshInterface() }
+        modifierSwap.stopped = { [weak self] in
+            self?.preferences.modifierSwapEnabled = false
+            self?.refreshInterface()
         }
         configureForCurrentRole()
         DispatchQueue.main.async { [weak self] in self?.showSettings() }
@@ -52,6 +43,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func configureForCurrentRole() {
+        modifierSwap.stop()
         transport?.stop()
         transport = nil
         sourceClient = nil
@@ -60,6 +52,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         physicalCapsLockMonitor?.stop()
         physicalCapsLockMonitor = nil
         inputMonitoringReady = preferences.role == .target
+        configureModifierSwap()
 
         guard preferences.helperEnabled else {
             connectionStatus = "꺼짐"
@@ -124,8 +117,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             inputMonitoringReady: inputMonitoringReady,
             helperEnabled: preferences.helperEnabled,
             currentVersion: displayedVersion,
-            canCheckForUpdates: updaterController.updater.canCheckForUpdates,
-            launchAtLoginState: LaunchAtLogin.state
+            canCheckForUpdates: false,
+            launchAtLoginState: LaunchAtLogin.state,
+            modifierSwapEnabled: preferences.modifierSwapEnabled,
+            modifierSwapStatus: modifierSwap.state.rawValue
         )
     }
 
@@ -221,6 +216,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         configureForCurrentRole()
     }
 
+    private func configureModifierSwap() {
+        modifierSwap.configure(requested: preferences.modifierSwapEnabled,
+                               role: preferences.role, helperEnabled: preferences.helperEnabled)
+    }
+
+    private func setModifierSwapEnabled(_ enabled: Bool) {
+        guard preferences.role == .target else { return }
+        preferences.modifierSwapEnabled = enabled
+        configureModifierSwap()
+        if enabled, modifierSwap.state == .permissionRequired {
+            AppPermissions.requestModifierAccessibility()
+        }
+        refreshInterface()
+    }
+
     private func applyPairingCode(_ code: String) -> Bool {
         guard PairingCode.isValid(code) else { return false }
         guard preferences.pairingCode != code else { return true }
@@ -269,7 +279,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller.helperEnabledDidChange = { [weak self] enabled in
             self?.setHelperEnabled(enabled)
         }
-        controller.updateCheckRequested = { [weak self] in self?.checkForUpdates() }
+        controller.modifierSwapDidChange = { [weak self] enabled in self?.setModifierSwapEnabled(enabled) }
+        controller.modifierPermissionRefreshRequested = { [weak self] in
+            self?.configureModifierSwap()
+            self?.refreshInterface()
+        }
         controller.launchAtLoginDidChange = { [weak self] enabled in
             let result = LaunchAtLogin.setEnabled(enabled)
             self?.refreshInterface()
@@ -294,7 +308,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard AppPermissions.resetInputMonitoring() else {
             let failure = NSAlert()
             failure.messageText = "권한 항목을 초기화하지 못했습니다."
-            failure.informativeText = "터미널에서 다음 명령을 실행해 주세요.\n\ntccutil reset ListenEvent io.yoonsungji.UniInputFix"
+            failure.informativeText = "터미널에서 다음 명령을 실행해 주세요.\n\ntccutil reset ListenEvent \(Bundle.main.bundleIdentifier ?? "")"
             failure.addButton(withTitle: "확인")
             failure.runModal()
             return
@@ -323,10 +337,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsController?.window?.performClose(nil)
     }
 
-    private func checkForUpdates() {
-        updaterController.checkForUpdates(nil)
-    }
-
     func applicationDidBecomeActive(_ notification: Notification) {
         if statusItem != nil, preferences.role == .source, !inputMonitoringReady {
             _ = refreshInputMonitoring()
@@ -343,6 +353,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        modifierSwap.stop()
         physicalCapsLockMonitor?.stop()
         inputSourceRelay?.stop()
         transport?.stop()

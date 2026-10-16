@@ -7,7 +7,7 @@
     <key>CFBundleExecutable</key>
     <string>UniversalControlHelper</string>
     <key>CFBundleIdentifier</key>
-    <string>io.yoonsungji.UniInputFix</string>
+    <string>com.gyuseungkyeong.UniversalControlHelper</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleIconName</key>
@@ -17,9 +17,9 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.5.3</string>
+    <string>1.5.4</string>
     <key>CFBundleVersion</key>
-    <string>1.5.3</string>
+    <string>15401</string>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
     <key>LSUIElement</key>
@@ -31,10 +31,6 @@
         <string>_uniinputfix._tcp</string>
     </array>
     <key>SUEnableAutomaticChecks</key>
-    <true/>
-    <key>SUFeedURL</key>
-    <string>https://github.com/feelgom/universal-control-helper/releases/latest/download/appcast.xml</string>
-    <key>SUPublicEDKey</key>
-    <string>bURjfv9+uysjyYp3GT94KuJ9/FgtQxpCAE1m5yZ1O3A=</string>
+    <false/>
 </dict>
 </plist>

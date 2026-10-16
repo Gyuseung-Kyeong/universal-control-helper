@@ -11,6 +11,7 @@ final class Preferences {
         static let role = "computerRole"
         static let pairingCode = "pairingCode"
         static let helperEnabled = "helperEnabled"
+        static let modifierSwapEnabled = "modifierSwapEnabled"
     }
 
     private let defaults: UserDefaults
@@ -45,5 +46,10 @@ final class Preferences {
     var helperEnabled: Bool {
         get { defaults.bool(forKey: Key.helperEnabled) }
         set { defaults.set(newValue, forKey: Key.helperEnabled) }
+    }
+
+    var modifierSwapEnabled: Bool {
+        get { defaults.bool(forKey: Key.modifierSwapEnabled) }
+        set { defaults.set(newValue, forKey: Key.modifierSwapEnabled) }
     }
 }

@@ -1,3 +1,5 @@
+> **Option / Command 추가 포크 시험판**: 설치와 사용은 [통합판 안내](docs/modifier-fork.md)를 참고하세요. 원본 프로젝트는 [feelgom/universal-control-helper](https://github.com/feelgom/universal-control-helper)입니다.
+
 <p align="center">
   <img src=".github/assets/hero.svg" alt="Universal Control Helper — keyboard input fixes for macOS Universal Control" width="100%" />
 </p>
@@ -63,35 +65,17 @@ Universal Control Helper는 키보드가 연결된 Mac의 **물리 Caps Lock**�
 
 ## 빠른 시작
 
-### 설치 스크립트 — 권장
+이 포크의 통합판 ZIP을 대상 Mac에 설치하고 설정에서 **Option ↔ Command 바꾸기**를 켭니다.
+기존 Source 앱은 유지할 수 있습니다. 자세한 절차와 권한 설정은 [통합판 안내](docs/modifier-fork.md)를 따르세요.
 
-다음 명령은 최신 GitHub Release를 내려받고, 게시된 SHA-256 체크섬과 앱 서명을 확인한 뒤 `/Applications`에 설치합니다. 기존 설치본은 삭제하지 않고 사용자 Library의 백업 폴더로 이동합니다.
-
-```bash
-curl -fsSL https://github.com/feelgom/universal-control-helper/releases/latest/download/install.sh | bash
-```
-
-실행 전에 스크립트를 확인하려면:
+직접 빌드하려면 다음을 실행합니다.
 
 ```bash
-curl -fsSL https://github.com/feelgom/universal-control-helper/releases/latest/download/install.sh -o /tmp/universal-control-helper-install.sh
-less /tmp/universal-control-helper-install.sh
-bash /tmp/universal-control-helper-install.sh
+bash scripts/check-modifier-fork.sh
+bash scripts/build-modifier-fork.sh
 ```
 
-앱을 자동 실행하지 않거나 다른 폴더에 설치할 수도 있습니다.
-
-```bash
-bash /tmp/universal-control-helper-install.sh --no-launch
-bash /tmp/universal-control-helper-install.sh --install-dir "$HOME/Applications"
-```
-
-### 직접 설치
-
-[최신 Release](https://github.com/feelgom/universal-control-helper/releases/latest)에서 `UniversalControlHelper-macOS-universal.zip`을 받아 압축을 풀고 `Universal Control Helper.app`을 `/Applications`로 옮깁니다.
-
-> [!IMPORTANT]
-> Apple Developer ID가 설정되지 않은 공개 빌드는 임시 서명으로 배포되므로 첫 실행 시 Finder에서 앱을 Control-클릭한 뒤 **열기**를 선택해야 할 수 있습니다. Developer ID 자격 증명이 등록되면 같은 파이프라인이 자동으로 서명·공증된 앱을 배포합니다.
+이하 문서는 기존 Caps Lock 기능의 사용 안내입니다. Target에서 키 교환을 켜면 접근성 권한이 추가로 필요합니다.
 
 ## 사용법
 
@@ -108,7 +92,7 @@ bash /tmp/universal-control-helper-install.sh --install-dir "$HOME/Applications"
 4. Source에 자동 생성된 **페어링 코드**를 Target에 입력합니다.
 5. 첫 연결 때 두 Mac에 나타나는 로컬 네트워크 요청을 허용하고, Source에서만 입력 모니터링을 허용합니다.
 
-설정창은 일반, 연결, Source 전용 입력 권한, 소프트웨어 업데이트 순서로 구성됩니다. 창이 열려 있을 때 `Command-W`를 누르면 메뉴 막대 앱은 계속 실행되지만 `Command-Tab` 목록에서는 숨겨집니다. 다시 열 때는 메뉴 막대의 **설정…**을 사용합니다. 로컬 네트워크 권한은 첫 연결 때 macOS가 자동으로 요청하므로 별도의 설정 항목으로 표시하지 않습니다. 접근성 권한은 필요하지 않습니다.
+설정창은 일반, 연결, Source 전용 입력 권한, 소프트웨어 업데이트 순서로 구성됩니다. 창이 열려 있을 때 `Command-W`를 누르면 메뉴 막대 앱은 계속 실행되지만 `Command-Tab` 목록에서는 숨겨집니다. 다시 열 때는 메뉴 막대의 **설정…**을 사용합니다. 로컬 네트워크 권한은 첫 연결 때 macOS가 자동으로 요청하므로 별도의 설정 항목으로 표시하지 않습니다. Caps Lock 기능에는 접근성이 필요하지 않습니다. Target의 Option / Command 교환을 켜면 접근성 권한이 필요합니다.
 
 메뉴 막대 메뉴에는 전체 기능 스위치, 설정, 종료만 표시합니다. 역할, 페어링 코드, 연결과 업데이트는 설정창에서 관리합니다. 상단 스위치나 설정창의 **Universal Control Helper 사용**을 끄면 입력 소스 동기화와 두 Mac 간 연결이 함께 일시 중지됩니다. **Mac에 로그인할 때 자동으로 실행**을 켜면 별도 헬퍼 없이 macOS 로그인 항목으로 등록됩니다.
 
@@ -139,9 +123,8 @@ Source Mac ── Bonjour / 같은 LAN ──▶ Target Mac
 
 ## 업데이트
 
-앱은 [Sparkle](https://sparkle-project.org/)로 GitHub Release의 EdDSA 서명 업데이트를 확인합니다. 설정창의 **소프트웨어 업데이트** 섹션에서 현재 버전을 보거나 **업데이트 확인…**을 선택할 수 있으며, 기본 주기 확인도 지원합니다.
-
-v1.5.3은 Universal Control이 키보드를 Target으로 전달하는 동안에도 물리 Caps Lock을 감지하기 위해 Source에서 입력 모니터링 권한을 사용합니다. Target에는 이 권한이 필요하지 않습니다. 스위치가 켜져 있어도 현재 빌드가 미허용이면 설정창의 **권한 항목 재등록…**을 사용하고 macOS 승인 요청을 허용하세요. 앱이 목록에 자동으로 나타나지 않으면 입력 모니터링 설정의 `+`를 누르고 `/Applications/Universal Control Helper.app`을 선택합니다. Developer ID가 없는 임시 서명 빌드에서는 업데이트 후 macOS가 권한을 다시 요청할 가능성을 완전히 배제할 수 없으며, Developer ID를 도입하면 앱의 서명 신원을 업데이트 간에 유지할 수 있습니다.
+이 포크는 수동 설치 파일로 업데이트합니다. 원본 자동 업데이트와 Sparkle 의존성을 제거했습니다.
+앱은 임시 서명이며 Apple 공증을 받지 않은 시험판입니다. 자세한 검증 범위는 [통합판 안내](docs/modifier-fork.md)를 참고하세요.
 
 ## 개발
 
@@ -151,7 +134,7 @@ BUILD_UNIVERSAL=1 ./scripts/build-app.sh
 REQUIRE_UNIVERSAL=1 ./scripts/verify-release.sh
 ```
 
-`v*` 태그를 푸시하면 GitHub Actions가 테스트, Universal Binary 빌드, Sparkle 서명, 앱캐스트 생성과 Release 업로드를 수행합니다. Apple 자격 증명이 있으면 Developer ID 서명과 공증도 자동으로 추가됩니다. 자세한 절차는 [RELEASING.md](RELEASING.md)를 참고하세요.
+원본의 태그 릴리즈 자동화는 이 포크에 아직 적용하지 않았습니다. 현재는 위 로컬 빌드 명령으로 설치 파일을 만듭니다.
 
 ## Star History
 

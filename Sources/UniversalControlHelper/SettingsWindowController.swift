@@ -10,6 +10,8 @@ struct SettingsSnapshot {
     let currentVersion: String
     let canCheckForUpdates: Bool
     let launchAtLoginState: LaunchAtLoginState
+    var modifierSwapEnabled = false
+    var modifierSwapStatus = "꺼짐"
 }
 
 final class SettingsViewModel: ObservableObject {
@@ -19,6 +21,8 @@ final class SettingsViewModel: ObservableObject {
     @Published private(set) var inputMonitoring = PermissionState.notDetermined
     @Published private(set) var inputMonitoringReady = false
     @Published private(set) var helperEnabled = true
+    @Published private(set) var modifierSwapEnabled = false
+    @Published private(set) var modifierSwapStatus = "꺼짐"
     @Published private(set) var currentVersion = "-"
     @Published private(set) var canCheckForUpdates = false
     @Published private(set) var launchAtLoginEnabled = false
@@ -35,6 +39,8 @@ final class SettingsViewModel: ObservableObject {
     var permissionResetRequested: (() -> Void)?
     var helperEnabledDidChange: ((Bool) -> Void)?
     var updateCheckRequested: (() -> Void)?
+    var modifierSwapDidChange: ((Bool) -> Void)?
+    var modifierPermissionRefreshRequested: (() -> Void)?
     var launchAtLoginDidChange: ((Bool) -> LaunchAtLoginChangeResult)?
 
     func update(snapshot: SettingsSnapshot) {
@@ -46,6 +52,8 @@ final class SettingsViewModel: ObservableObject {
         inputMonitoringReady = snapshot.inputMonitoringReady
         inputMonitoring = AppPermissions.inputMonitoring
         helperEnabled = snapshot.helperEnabled
+        modifierSwapEnabled = snapshot.modifierSwapEnabled
+        modifierSwapStatus = snapshot.modifierSwapStatus
         currentVersion = snapshot.currentVersion
         canCheckForUpdates = snapshot.canCheckForUpdates
         applyLaunchAtLoginState(snapshot.launchAtLoginState)
@@ -106,6 +114,15 @@ final class SettingsViewModel: ObservableObject {
         helperEnabledDidChange?(enabled)
     }
 
+    func setModifierSwapEnabled(_ enabled: Bool) {
+        modifierSwapEnabled = enabled
+        modifierSwapDidChange?(enabled)
+    }
+
+    func refreshModifierPermission() {
+        modifierPermissionRefreshRequested?()
+    }
+
     func setLaunchAtLogin(_ enabled: Bool) {
         guard let result = launchAtLoginDidChange?(enabled) else { return }
         applyLaunchAtLoginState(result.state)
@@ -133,6 +150,8 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     var permissionResetRequested: (() -> Void)?
     var helperEnabledDidChange: ((Bool) -> Void)?
     var updateCheckRequested: (() -> Void)?
+    var modifierSwapDidChange: ((Bool) -> Void)?
+    var modifierPermissionRefreshRequested: (() -> Void)?
     var launchAtLoginDidChange: ((Bool) -> LaunchAtLoginChangeResult)?
     var windowDidClose: (() -> Void)?
 
@@ -170,6 +189,12 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         model.helperEnabledDidChange = { [weak self] enabled in
             self?.helperEnabledDidChange?(enabled)
         }
+        model.modifierSwapDidChange = { [weak self] enabled in
+            self?.modifierSwapDidChange?(enabled)
+        }
+        model.modifierPermissionRefreshRequested = { [weak self] in
+            self?.modifierPermissionRefreshRequested?()
+        }
         model.updateCheckRequested = { [weak self] in
             self?.updateCheckRequested?()
         }
@@ -201,8 +226,8 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     }
 
     private func resize(for role: ComputerRole) {
-        let height: CGFloat = role == .source ? 720 : 590
-        window?.minSize = NSSize(width: 560, height: role == .source ? 660 : 550)
+        let height: CGFloat = role == .source ? 750 : 800
+        window?.minSize = NSSize(width: 560, height: role == .source ? 690 : 760)
         window?.setContentSize(NSSize(width: 600, height: height))
     }
 }
@@ -217,6 +242,8 @@ private struct SettingsView: View {
             connectionSection
             if model.role == .source {
                 inputPermissionSection
+            } else {
+                modifierSwapSection
             }
             softwareUpdateSection
             Spacer(minLength: 0)
@@ -225,8 +252,8 @@ private struct SettingsView: View {
         .frame(
             minWidth: 560,
             idealWidth: 600,
-            minHeight: model.role == .source ? 660 : 550,
-            idealHeight: model.role == .source ? 720 : 590
+            minHeight: model.role == .source ? 690 : 760,
+            idealHeight: model.role == .source ? 750 : 800
         )
     }
 
@@ -428,17 +455,49 @@ private struct SettingsView: View {
         }
     }
 
+    private var modifierSwapSection: some View {
+        GroupBox("Option / Command 교환 - Target 전용") {
+            VStack(alignment: .leading, spacing: 10) {
+                Toggle("Option ↔ Command 바꾸기", isOn: Binding(
+                    get: { model.modifierSwapEnabled },
+                    set: { model.setModifierSwapEnabled($0) }
+                ))
+                .disabled(!model.helperEnabled)
+                .accessibilityLabel("Option과 Command 바꾸기")
+                Text(model.modifierSwapStatus)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("이 Mac에서만 적용합니다. 자체 키보드에도 적용됩니다. 시작과 종료 전에는 modifier 키에서 손을 떼세요.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("긴급 중지: Control + Shift + Escape")
+                    .font(.caption)
+                HStack {
+                    Button("접근성 설정 열기") { AppPermissions.openAccessibilitySettings() }
+                    Button("앱 위치 보기") { AppPermissions.revealCurrentApplication() }
+                    Spacer()
+                    Button("권한 다시 확인") { model.refreshModifierPermission() }
+                        .disabled(!model.helperEnabled)
+                }
+                .controlSize(.small)
+            }
+            .padding(8)
+        }
+    }
+
     private var softwareUpdateSection: some View {
         GroupBox("소프트웨어 업데이트") {
-            LabeledContent("현재 버전") {
-                HStack(spacing: 10) {
-                    Text(model.currentVersion)
+            VStack(alignment: .leading, spacing: 8) {
+                LabeledContent("현재 버전") {
+                    Text(model.currentVersion).foregroundStyle(.secondary)
+                }
+                if model.canCheckForUpdates {
+                    Button("업데이트 확인…") { model.checkForUpdates() }
+                        .accessibilityLabel("새 버전 확인")
+                } else {
+                    Text("Option / Command 추가 시험판. 업데이트는 새 설치 파일로 진행합니다.")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
-                    Button("업데이트 확인…") {
-                        model.checkForUpdates()
-                    }
-                    .disabled(!model.canCheckForUpdates)
-                    .accessibilityLabel("새 버전 확인")
                 }
             }
             .padding(8)

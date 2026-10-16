@@ -9,16 +9,12 @@ let package = Package(
         .library(name: "UniversalControlCore", targets: ["UniversalControlCore"]),
         .executable(name: "UniversalControlHelper", targets: ["UniversalControlHelper"]),
     ],
-    dependencies: [
-        .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.9.6"),
-    ],
     targets: [
         .target(name: "UniversalControlCore"),
         .executableTarget(
             name: "UniversalControlHelper",
             dependencies: [
                 "UniversalControlCore",
-                .product(name: "Sparkle", package: "Sparkle"),
             ],
             linkerSettings: [
                 .linkedFramework("AppKit"),

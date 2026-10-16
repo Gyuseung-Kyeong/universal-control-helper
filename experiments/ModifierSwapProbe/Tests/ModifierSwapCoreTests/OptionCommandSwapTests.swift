@@ -1,5 +1,9 @@
 import CoreGraphics
+#if INTEGRATED_FORK
+import UniversalControlCore
+#else
 import ModifierSwapCore
+#endif
 
 struct OptionCommandSwapChecks {
     func testLeftAndRightFlagsPreserveOtherModifiers() {
@@ -90,5 +94,8 @@ struct RunChecks {
         checks.testUnmodifiedInputAndEmergencyChordArePreserved()
         checks.testMouseModifierFlagsAreAlsoSwapped()
         print("PASS: 6 modifier swap checks, including 64 flag combinations")
+        #if INTEGRATED_FORK
+        runIntegratedChecks()
+        #endif
     }
 }
